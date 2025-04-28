@@ -1,7 +1,8 @@
 package com.rahul.typetowin.application;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rahul.typetowin.application.dto.GameResult;
+import com.rahul.typetowin.application.dto.GameSession;
 import com.rahul.typetowin.application.dto.QuoteResponse;
 import io.nats.client.Connection;
 import io.nats.client.Dispatcher;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 @Component
 public class QuoteNatsListener {
@@ -32,45 +34,44 @@ public class QuoteNatsListener {
 
     @PostConstruct
     public void init() throws IOException, InterruptedException {
-        dispatcher = natsConnection.createDispatcher((msg) -> {
-            logger.info("Received initial quote request");
+        // Existing quote.request and quote.next handlers...
+
+        // Game session creation
+        Dispatcher sessionDispatcher = natsConnection.createDispatcher((msg) -> {
+            logger.info("Received game session creation request");
             try {
+                String sessionId = UUID.randomUUID().toString();
                 QuoteResponse quoteResponse = quoteService.getRandomQuote();
-                String jsonResponse = objectMapper.writeValueAsString(quoteResponse);
+
+                GameSession session = new GameSession();
+                session.setSessionId(sessionId);
+                session.setQuote(quoteResponse.getText());
+
+                String jsonResponse = objectMapper.writeValueAsString(session);
                 natsConnection.publish(msg.getReplyTo(), jsonResponse.getBytes(StandardCharsets.UTF_8));
-                logger.info("Replied with initial quote");
+                logger.info("Replied with new game session");
             } catch (Exception e) {
-                logger.error("Error retrieving initial quote: {}", e.getMessage());
+                logger.error("Error creating game session: {}", e.getMessage());
             }
         });
+        sessionDispatcher.subscribe("game.session.create");
+        logger.info("Listening for game session creation on 'game.session.create'");
 
-        dispatcher.subscribe("quote.request");
-        logger.info("Listening for initial quote requests on 'quote.request'");
-
-        Dispatcher nextDispatcher = natsConnection.createDispatcher((msg) -> {
-            logger.info("Received next words request");
+        // Game result submission
+        Dispatcher resultDispatcher = natsConnection.createDispatcher((msg) -> {
+            logger.info("Received game result submission");
             try {
-                int wordCount = 10;
-                try {
-                    JsonNode request = objectMapper.readTree(msg.getData());
-                    if (request.has("wordCount")) {
-                        wordCount = request.get("wordCount").asInt(10);
-                    }
-                } catch (Exception e) {
-                    logger.warn("Could not parse word count from request, using default: {}", e.getMessage());
-                }
-
-                QuoteResponse quoteResponse = quoteService.getNextWords(wordCount);
-                String jsonResponse = objectMapper.writeValueAsString(quoteResponse);
-                natsConnection.publish(msg.getReplyTo(), jsonResponse.getBytes(StandardCharsets.UTF_8));
-                logger.info("Replied with next words");
+                GameResult result = objectMapper.readValue(msg.getData(), GameResult.class);
+                // Here you can store the result in a database or log it
+                logger.info("Game result: sessionId={}, correct={}, incorrect={}, timer={}",
+                        result.getSessionId(), result.getCorrectChars(), result.getIncorrectChars(), result.getTimer());
+                natsConnection.publish(msg.getReplyTo(), "OK".getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
-                logger.error("Error retrieving next words: {}", e.getMessage());
+                logger.error("Error processing game result: {}", e.getMessage());
             }
         });
-
-        nextDispatcher.subscribe("quote.next");
-        logger.info("Listening for next words requests on 'quote.next'");
+        resultDispatcher.subscribe("game.session.result");
+        logger.info("Listening for game result submissions on 'game.session.result'");
     }
 
     @PreDestroy
@@ -78,5 +79,6 @@ public class QuoteNatsListener {
         if (dispatcher != null) {
             dispatcher.unsubscribe("quote.request", 1);
         }
+        // Optionally unsubscribe sessionDispatcher and resultDispatcher if you keep references
     }
 }
