@@ -15,7 +15,7 @@ import java.util.UUID;
 public class GameController {
 
     @Autowired
-    private NatsQuoteClient natsQuoteClient;
+    private QuoteService quoteService; // Use local service, not NATS
 
     @Autowired
     private GameResultRepository gameResultRepository;
@@ -23,9 +23,7 @@ public class GameController {
     // 1. Get a random quote
     @GetMapping("/next")
     public ResponseEntity<QuoteResponse> getNextQuote(@RequestParam(value = "wordCount", defaultValue = "10") int wordCount) {
-        String quoteText = natsQuoteClient.requestQuote(wordCount);
-        QuoteResponse quote = new QuoteResponse();
-        quote.setText(quoteText);
+        QuoteResponse quote = quoteService.getRandomQuote(wordCount);
         return ResponseEntity.ok(quote);
     }
 
@@ -33,11 +31,11 @@ public class GameController {
     @PostMapping("/session")
     public ResponseEntity<GameSession> createSession() {
         String sessionId = UUID.randomUUID().toString();
-        String quoteText = natsQuoteClient.requestQuote(20); // or any default word count
+        QuoteResponse quote = quoteService.getRandomQuote(20); // or any default word count
 
         GameSession session = new GameSession();
         session.setSessionId(sessionId);
-        session.setQuote(quoteText);
+        session.setQuote(quote.getText());
 
         return ResponseEntity.ok(session);
     }
@@ -54,4 +52,3 @@ public class GameController {
         return ResponseEntity.ok().build();
     }
 }
-
