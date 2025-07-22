@@ -3,7 +3,6 @@ package com.rahul.typetowin.application;
 import com.rahul.typetowin.application.dto.GameResult;
 import com.rahul.typetowin.application.dto.GameSession;
 import com.rahul.typetowin.application.dto.QuoteResponse;
-import com.rahul.typetowin.application.entity.GameResultEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,10 +14,7 @@ import java.util.UUID;
 public class GameController {
 
     @Autowired
-    private QuoteService quoteService; // Use local service, not NATS
-
-    @Autowired
-    private GameResultRepository gameResultRepository;
+    private QuoteService quoteService;
 
     // 1. Get a random quote
     @GetMapping("/next")
@@ -38,17 +34,5 @@ public class GameController {
         session.setQuote(quote.getText());
 
         return ResponseEntity.ok(session);
-    }
-
-    // 3. Submit game result
-    @PostMapping("/result")
-    public ResponseEntity<?> submitResult(@RequestBody GameResult result) {
-        GameResultEntity entity = new GameResultEntity();
-        entity.setSessionId(result.getSessionId());
-        entity.setCorrectChars(result.getCorrectChars());
-        entity.setIncorrectChars(result.getIncorrectChars());
-        entity.setTimer(result.getTimer());
-        gameResultRepository.save(entity);
-        return ResponseEntity.ok().build();
     }
 }
