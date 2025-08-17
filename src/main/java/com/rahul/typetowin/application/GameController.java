@@ -1,6 +1,5 @@
 package com.rahul.typetowin.application;
 
-import com.rahul.typetowin.application.dto.GameResult;
 import com.rahul.typetowin.application.dto.GameSession;
 import com.rahul.typetowin.application.dto.QuoteResponse;
 import org.springframework.beans.factory.annotation.Autowired;
