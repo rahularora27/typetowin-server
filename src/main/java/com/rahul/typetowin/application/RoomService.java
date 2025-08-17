@@ -2,6 +2,7 @@ package com.rahul.typetowin.application;
 
 import com.rahul.typetowin.application.dto.GameRoom;
 import com.rahul.typetowin.application.dto.Player;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -11,6 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class RoomService {
     private final Map<String, GameRoom> rooms = new ConcurrentHashMap<>();
+    
+    @Autowired
+    private QuoteService quoteService;
 
     public GameRoom createRoom(String playerName) {
         String roomId = generateRoomId();
@@ -75,6 +79,9 @@ public class RoomService {
             throw new RuntimeException("Only room owner can start the game");
         }
         
+        // Generate a quote for the game
+        String quote = quoteService.getRandomQuote(50).getText();
+        room.setQuote(quote);
         room.setGameStarted(true);
     }
 

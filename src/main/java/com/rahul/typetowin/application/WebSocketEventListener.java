@@ -42,7 +42,8 @@ public class WebSocketEventListener {
         
         if (roomId != null && playerId != null) {
             // Check if this player was kicked - if so, don't send leave message
-            boolean wasKicked = kickedPlayers.remove(playerId);
+            Boolean kickedStatus = kickedPlayers.remove(playerId);
+            boolean wasKicked = kickedStatus != null && kickedStatus;
             
             if (!wasKicked) {
                 GameRoom room = roomService.getRoom(roomId);
