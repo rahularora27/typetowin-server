@@ -1,5 +1,7 @@
 package com.rahul.typetowin.application.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Player {
     private String id;
     private String name;
@@ -29,6 +31,7 @@ public class Player {
         this.name = name;
     }
 
+    @JsonProperty("isOwner")
     public boolean isOwner() {
         return isOwner;
     }

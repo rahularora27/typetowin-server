@@ -78,6 +78,28 @@ public class RoomService {
         room.setGameStarted(true);
     }
 
+    public void kickPlayer(String roomId, String ownerId, String playerIdToKick) {
+        GameRoom room = rooms.get(roomId);
+        if (room == null) {
+            throw new RuntimeException("Room not found");
+        }
+        
+        if (!room.getOwnerId().equals(ownerId)) {
+            throw new RuntimeException("Only room owner can kick players");
+        }
+        
+        if (ownerId.equals(playerIdToKick)) {
+            throw new RuntimeException("Room owner cannot kick themselves");
+        }
+        
+        Player playerToKick = room.getPlayerById(playerIdToKick);
+        if (playerToKick == null) {
+            throw new RuntimeException("Player not found in room");
+        }
+        
+        room.removePlayer(playerIdToKick);
+    }
+
     private String generateRoomId() {
         // Generate a short 6-character room ID
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();

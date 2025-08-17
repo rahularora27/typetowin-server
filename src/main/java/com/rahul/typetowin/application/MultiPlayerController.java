@@ -111,6 +111,53 @@ public class MultiPlayerController {
         }
     }
 
+    @MessageMapping("/room/{roomId}/kick")
+    public void kickPlayer(@DestinationVariable String roomId, KickRequest request) {
+        try {
+            GameRoom room = roomService.getRoom(roomId);
+            if (room != null) {
+                // Find owner by name
+                Player owner = room.getPlayers().stream()
+                    .filter(p -> p.getName().equals(request.getOwnerName()))
+                    .findFirst()
+                    .orElse(null);
+                    
+                if (owner != null && owner.isOwner()) {
+                    // Find player to kick and get their name before removal
+                    Player playerToKick = room.getPlayerById(request.getPlayerIdToKick());
+                    if (playerToKick != null) {
+                        String kickedPlayerName = playerToKick.getName();
+                        
+                        // Mark player as kicked to prevent duplicate disconnect message
+                        webSocketEventListener.markPlayerAsKicked(request.getPlayerIdToKick());
+                        
+                        roomService.kickPlayer(roomId, owner.getId(), request.getPlayerIdToKick());
+                        
+                        // Send updated player list
+                        GameRoom updatedRoom = roomService.getRoom(roomId);
+                        if (updatedRoom != null) {
+                            messagingTemplate.convertAndSend("/topic/room/" + roomId + "/players", updatedRoom.getPlayers());
+                        }
+                        
+                        // Send chat notification
+                        ChatMessage kickMessage = new ChatMessage(
+                            owner.getId(), 
+                            owner.getName(), 
+                            kickedPlayerName + " was kicked from the room", 
+                            ChatMessage.MessageType.PLAYER_LEFT
+                        );
+                        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/chat", kickMessage);
+                        
+                        // Notify the kicked player specifically
+                        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/kicked/" + request.getPlayerIdToKick(), "You have been kicked from the room");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error kicking player: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/api/room/{roomId}")
     @ResponseBody
     public GameRoom getRoom(@PathVariable String roomId) {

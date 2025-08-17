@@ -24,6 +24,8 @@ public class WebSocketEventListener {
     // Map to track which player is in which room
     private final ConcurrentHashMap<String, String> sessionToRoom = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> sessionToPlayer = new ConcurrentHashMap<>();
+    // Track kicked players to avoid duplicate messages
+    private final ConcurrentHashMap<String, Boolean> kickedPlayers = new ConcurrentHashMap<>();
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
@@ -39,26 +41,31 @@ public class WebSocketEventListener {
         String playerId = sessionToPlayer.get(sessionId);
         
         if (roomId != null && playerId != null) {
-            GameRoom room = roomService.getRoom(roomId);
-            if (room != null) {
-                String playerName = room.getPlayerById(playerId) != null ? 
-                    room.getPlayerById(playerId).getName() : "Unknown";
-                
-                roomService.removePlayerFromRoom(roomId, playerId);
-                
-                // Send notification to remaining players
-                ChatMessage leaveMessage = new ChatMessage(
-                    playerId, 
-                    playerName, 
-                    playerName + " left the room", 
-                    ChatMessage.MessageType.PLAYER_LEFT
-                );
-                messagingTemplate.convertAndSend("/topic/room/" + roomId + "/chat", leaveMessage);
-                
-                // Update player list
-                GameRoom updatedRoom = roomService.getRoom(roomId);
-                if (updatedRoom != null) {
-                    messagingTemplate.convertAndSend("/topic/room/" + roomId + "/players", updatedRoom.getPlayers());
+            // Check if this player was kicked - if so, don't send leave message
+            boolean wasKicked = kickedPlayers.remove(playerId);
+            
+            if (!wasKicked) {
+                GameRoom room = roomService.getRoom(roomId);
+                if (room != null) {
+                    String playerName = room.getPlayerById(playerId) != null ? 
+                        room.getPlayerById(playerId).getName() : "Unknown";
+                    
+                    roomService.removePlayerFromRoom(roomId, playerId);
+                    
+                    // Send notification to remaining players
+                    ChatMessage leaveMessage = new ChatMessage(
+                        playerId, 
+                        playerName, 
+                        playerName + " left the room", 
+                        ChatMessage.MessageType.PLAYER_LEFT
+                    );
+                    messagingTemplate.convertAndSend("/topic/room/" + roomId + "/chat", leaveMessage);
+                    
+                    // Update player list
+                    GameRoom updatedRoom = roomService.getRoom(roomId);
+                    if (updatedRoom != null) {
+                        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/players", updatedRoom.getPlayers());
+                    }
                 }
             }
             
@@ -71,5 +78,9 @@ public class WebSocketEventListener {
     public void trackPlayerSession(String sessionId, String roomId, String playerId) {
         sessionToRoom.put(sessionId, roomId);
         sessionToPlayer.put(sessionId, playerId);
+    }
+    
+    public void markPlayerAsKicked(String playerId) {
+        kickedPlayers.put(playerId, true);
     }
 }
