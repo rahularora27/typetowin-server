@@ -54,6 +54,9 @@ public class GameTimerService {
                 // Countdown finished, start the game
                 roomService.updateCountdown(roomId, 0);
                 cancelCountdown(roomId);
+                
+                // Set game time to the configured duration
+                roomService.updateGameTimer(roomId, currentRoom.getGameDuration());
                 startGameTimer(roomId);
                 
                 // Notify game actually started

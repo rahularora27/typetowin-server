@@ -164,6 +164,41 @@ public class MultiPlayerController {
         }
     }
 
+    @MessageMapping("/room/{roomId}/setTimer")
+    public void setTimerDuration(@DestinationVariable String roomId, TimerDurationRequest request) {
+        try {
+            GameRoom room = roomService.getRoom(roomId);
+            if (room != null) {
+                // Find owner by name
+                Player owner = room.getPlayers().stream()
+                    .filter(p -> p.getName().equals(request.getPlayerName()))
+                    .findFirst()
+                    .orElse(null);
+                    
+                if (owner != null && owner.isOwner()) {
+                    roomService.setGameDuration(roomId, owner.getId(), request.getDuration());
+                    
+                    // Send updated room to all players
+                    GameRoom updatedRoom = roomService.getRoom(roomId);
+                    if (updatedRoom != null) {
+                        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/timerChanged", updatedRoom);
+                        
+                        // Send chat notification
+                        ChatMessage timerMessage = new ChatMessage(
+                            owner.getId(), 
+                            owner.getName(), 
+                            owner.getName() + " set timer to " + request.getDuration() + " seconds", 
+                            ChatMessage.MessageType.GAME_STARTED
+                        );
+                        messagingTemplate.convertAndSend("/topic/room/" + roomId + "/chat", timerMessage);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error setting timer duration: " + e.getMessage());
+        }
+    }
+    
     @GetMapping("/api/room/{roomId}")
     @ResponseBody
     public GameRoom getRoom(@PathVariable String roomId) {

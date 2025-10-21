@@ -106,7 +106,7 @@ public class RoomService {
             if (time <= 0) {
                 room.setCountdownActive(false);
                 room.setGameActive(true);
-                room.setGameTime(60); // 60 second game time
+                room.setGameTime(room.getGameDuration()); // Use configured game duration
             }
         }
     }
@@ -119,6 +119,28 @@ public class RoomService {
                 room.setGameActive(false);
             }
         }
+    }
+    
+    public void setGameDuration(String roomId, String ownerId, int duration) {
+        GameRoom room = rooms.get(roomId);
+        if (room == null) {
+            throw new RuntimeException("Room not found");
+        }
+        
+        if (!room.getOwnerId().equals(ownerId)) {
+            throw new RuntimeException("Only room owner can change game duration");
+        }
+        
+        if (room.isGameStarted()) {
+            throw new RuntimeException("Cannot change duration after game has started");
+        }
+        
+        // Validate duration (only allow 15, 30, 60 seconds)
+        if (duration != 15 && duration != 30 && duration != 60) {
+            throw new RuntimeException("Invalid duration. Must be 15, 30, or 60 seconds");
+        }
+        
+        room.setGameDuration(duration);
     }
 
     public void kickPlayer(String roomId, String ownerId, String playerIdToKick) {

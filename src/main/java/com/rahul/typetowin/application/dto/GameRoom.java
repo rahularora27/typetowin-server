@@ -13,10 +13,12 @@ public class GameRoom {
     private int countdownTime;
     private boolean gameActive;
     private int gameTime;
+    private int gameDuration;
 
     public GameRoom() {
         this.players = new ArrayList<>();
         this.gameStarted = false;
+        this.gameDuration = 60; // Default 60 seconds
     }
 
     public GameRoom(String roomId, String ownerId) {
@@ -24,6 +26,7 @@ public class GameRoom {
         this.ownerId = ownerId;
         this.players = new ArrayList<>();
         this.gameStarted = false;
+        this.gameDuration = 60; // Default 60 seconds
     }
 
     public String getRoomId() {
@@ -111,5 +114,13 @@ public class GameRoom {
 
     public void setGameTime(int gameTime) {
         this.gameTime = gameTime;
+    }
+
+    public int getGameDuration() {
+        return gameDuration;
+    }
+
+    public void setGameDuration(int gameDuration) {
+        this.gameDuration = gameDuration;
     }
 }
