@@ -17,16 +17,21 @@ public class GameController {
 
     // 1. Get a random quote
     @GetMapping("/next")
-    public ResponseEntity<QuoteResponse> getNextQuote(@RequestParam(value = "wordCount", defaultValue = "10") int wordCount) {
-        QuoteResponse quote = quoteService.getRandomQuote(wordCount);
+    public ResponseEntity<QuoteResponse> getNextQuote(
+            @RequestParam(value = "wordCount", defaultValue = "10") int wordCount,
+            @RequestParam(value = "punctuation", defaultValue = "false") boolean includePunctuation,
+            @RequestParam(value = "numbers", defaultValue = "false") boolean includeNumbers) {
+        QuoteResponse quote = quoteService.getRandomQuote(wordCount, includePunctuation, includeNumbers);
         return ResponseEntity.ok(quote);
     }
 
     // 2. Create a new game session
     @PostMapping("/session")
-    public ResponseEntity<GameSession> createSession() {
+    public ResponseEntity<GameSession> createSession(
+            @RequestParam(value = "punctuation", defaultValue = "false") boolean includePunctuation,
+            @RequestParam(value = "numbers", defaultValue = "false") boolean includeNumbers) {
         String sessionId = UUID.randomUUID().toString();
-        QuoteResponse quote = quoteService.getRandomQuote(20); // or any default word count
+        QuoteResponse quote = quoteService.getRandomQuote(20, includePunctuation, includeNumbers);
 
         GameSession session = new GameSession();
         session.setSessionId(sessionId);

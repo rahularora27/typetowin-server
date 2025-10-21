@@ -39,13 +39,50 @@ public class QuoteService {
     }
 
     public QuoteResponse getRandomQuote(int wordCount) {
+        return getRandomQuote(wordCount, false, false);
+    }
+    
+    public QuoteResponse getRandomQuote(int wordCount, boolean includePunctuation, boolean includeNumbers) {
         StringBuilder sentence = new StringBuilder();
-        for (int i = 0; i < wordCount; i++) {
-            int randomIndex = random.nextInt(wordList.size());
-            sentence.append(wordList.get(randomIndex)).append(" ");
+        String[] punctuationMarks = {",", ".", "?", "!", ";", ":"};
+        int wordsGenerated = 0;
+        
+        while (wordsGenerated < wordCount) {
+            // Decide if this should be a number or a word
+            boolean shouldAddNumber = includeNumbers && random.nextDouble() < 0.15; // 15% chance
+            
+            if (shouldAddNumber) {
+                // Add a number as a separate word
+                int number = random.nextInt(1000); // 0-999
+                sentence.append(number);
+            } else {
+                // Add a regular word
+                int randomIndex = random.nextInt(wordList.size());
+                String word = wordList.get(randomIndex);
+                sentence.append(word);
+            }
+            
+            wordsGenerated++;
+            
+            // Add punctuation occasionally if enabled (not on last word)
+            if (includePunctuation && wordsGenerated < wordCount && random.nextDouble() < 0.2) { // 20% chance
+                String punctuation = punctuationMarks[random.nextInt(punctuationMarks.length)];
+                sentence.append(punctuation);
+            }
+            
+            // Add space if not the last word
+            if (wordsGenerated < wordCount) {
+                sentence.append(" ");
+            }
         }
+        
+        // Always end with a period if punctuation is enabled
+        if (includePunctuation) {
+            sentence.append(".");
+        }
+        
         QuoteResponse quoteResponse = new QuoteResponse();
-        quoteResponse.setText(sentence.toString().trim());
+        quoteResponse.setText(sentence.toString());
         return quoteResponse;
     }
 }
