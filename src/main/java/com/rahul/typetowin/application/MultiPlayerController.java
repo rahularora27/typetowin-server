@@ -22,6 +22,9 @@ public class MultiPlayerController {
     @Autowired
     private WebSocketEventListener webSocketEventListener;
 
+    @Autowired
+    private GameTimerService gameTimerService;
+
     @PostMapping("/api/room/create")
     @ResponseBody
     public GameRoom createRoom(@RequestBody RoomRequest request) {
@@ -99,11 +102,14 @@ public class MultiPlayerController {
                     ChatMessage startMessage = new ChatMessage(
                         player.getId(), 
                         player.getName(), 
-                        "Game started!", 
+                        "Game starting in 3 seconds...", 
                         ChatMessage.MessageType.GAME_STARTED
                     );
                     messagingTemplate.convertAndSend("/topic/room/" + roomId + "/chat", startMessage);
                     messagingTemplate.convertAndSend("/topic/room/" + roomId + "/gameStart", room);
+                    
+                    // Start countdown timer
+                    gameTimerService.startCountdown(roomId);
                 }
             }
         } catch (Exception e) {

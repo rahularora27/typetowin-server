@@ -15,6 +15,13 @@ public class RoomService {
     
     @Autowired
     private QuoteService quoteService;
+    
+    // GameTimerService will be injected to avoid circular dependency
+    private GameTimerService gameTimerService;
+    
+    public void setGameTimerService(GameTimerService gameTimerService) {
+        this.gameTimerService = gameTimerService;
+    }
 
     public GameRoom createRoom(String playerName) {
         String roomId = generateRoomId();
@@ -56,6 +63,9 @@ public class RoomService {
             
             // If room becomes empty, remove it
             if (room.getPlayers().isEmpty()) {
+                if (gameTimerService != null) {
+                    gameTimerService.cancelAllTimers(roomId);
+                }
                 rooms.remove(roomId);
             }
             // If owner leaves, assign new owner or remove room
@@ -83,6 +93,32 @@ public class RoomService {
         String quote = quoteService.getRandomQuote(50).getText();
         room.setQuote(quote);
         room.setGameStarted(true);
+        
+        // Start countdown
+        room.setCountdownActive(true);
+        room.setCountdownTime(3); // 3 second countdown
+    }
+
+    public void updateCountdown(String roomId, int time) {
+        GameRoom room = rooms.get(roomId);
+        if (room != null) {
+            room.setCountdownTime(time);
+            if (time <= 0) {
+                room.setCountdownActive(false);
+                room.setGameActive(true);
+                room.setGameTime(60); // 60 second game time
+            }
+        }
+    }
+
+    public void updateGameTimer(String roomId, int time) {
+        GameRoom room = rooms.get(roomId);
+        if (room != null) {
+            room.setGameTime(time);
+            if (time <= 0) {
+                room.setGameActive(false);
+            }
+        }
     }
 
     public void kickPlayer(String roomId, String ownerId, String playerIdToKick) {

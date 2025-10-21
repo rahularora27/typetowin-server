@@ -9,6 +9,10 @@ public class GameRoom {
     private String ownerId;
     private boolean gameStarted;
     private String quote;
+    private boolean countdownActive;
+    private int countdownTime;
+    private boolean gameActive;
+    private int gameTime;
 
     public GameRoom() {
         this.players = new ArrayList<>();
@@ -75,5 +79,37 @@ public class GameRoom {
                 .filter(player -> player.getId().equals(playerId))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public boolean isCountdownActive() {
+        return countdownActive;
+    }
+
+    public void setCountdownActive(boolean countdownActive) {
+        this.countdownActive = countdownActive;
+    }
+
+    public int getCountdownTime() {
+        return countdownTime;
+    }
+
+    public void setCountdownTime(int countdownTime) {
+        this.countdownTime = countdownTime;
+    }
+
+    public boolean isGameActive() {
+        return gameActive;
+    }
+
+    public void setGameActive(boolean gameActive) {
+        this.gameActive = gameActive;
+    }
+
+    public int getGameTime() {
+        return gameTime;
+    }
+
+    public void setGameTime(int gameTime) {
+        this.gameTime = gameTime;
     }
 }
